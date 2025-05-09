@@ -580,6 +580,6 @@ class JsVarParser {
 // Add interface for Error with withProxyConfig method
 declare global {
     interface Error {
-        withProxyConfig?: (config: ProxyConfig | null) => Error;
+        withProxyConfig?(proxyConfig: ProxyConfig | null): this;
     }
 }

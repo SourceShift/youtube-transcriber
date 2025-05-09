@@ -2,7 +2,7 @@ import { Command } from 'commander';
 
 import { GenericProxyConfig, WebshareProxyConfig, ProxyConfig } from './proxies';
 import { FormatterLoader } from './formatters';
-import { YouTubeTranscriptApi, FetchedTranscript, TranscriptList } from './index';
+import { YouTubeTranscriptApi, FetchedTranscript, TranscriptList, Transcript } from './index';
 
 // Extended Command interface to include videoIds property
 interface ExtendedCommand extends Command {
@@ -23,6 +23,11 @@ interface ParsedArgs {
     languages: string[];
     format: string;
     translate?: string;
+}
+
+// Type guard for program.videoIds
+function isStringArray(value: unknown): value is string[] {
+    return Array.isArray(value) && value.every(item => typeof item === 'string');
 }
 
 export class YouTubeTranscriptCli {
@@ -56,6 +61,7 @@ export class YouTubeTranscriptCli {
 
         const cookiePath = parsedArgs.cookies;
 
+        // Explicitly declare with only the types that have toString() implementations
         const transcripts: (FetchedTranscript | TranscriptList)[] = [];
         const exceptions: Error[] = [];
 
@@ -86,14 +92,12 @@ export class YouTubeTranscriptCli {
 
         if (transcripts.length > 0) {
             if (parsedArgs.listTranscripts === true) {
-                printSections.push(
-                    ...transcripts.map(t => {
-                        if (typeof t.toString === 'function') {
-                            return t.toString();
-                        }
-                        return String(t);
-                    })
-                );
+                // Use explicit for loop to handle typed objects
+                for (const transcript of transcripts) {
+                    // Each element in the array is guaranteed to be either TranscriptList or FetchedTranscript
+                    // Use explicit type assertion to resolve the eslint error
+                    printSections.push((transcript as { toString(): string }).toString());
+                }
             } else {
                 const transcriptsAsTextArray = transcripts.map(t => {
                     if (t instanceof FetchedTranscript) {
@@ -117,7 +121,7 @@ export class YouTubeTranscriptCli {
         parsedArgs: ParsedArgs,
         transcriptList: TranscriptList
     ): Promise<FetchedTranscript> {
-        let transcript;
+        let transcript: Transcript;
 
         if (parsedArgs.excludeManuallyCreated === true) {
             transcript = transcriptList.findGeneratedTranscript(parsedArgs.languages);
@@ -128,7 +132,9 @@ export class YouTubeTranscriptCli {
         }
 
         if (parsedArgs.translate !== undefined && parsedArgs.translate !== '') {
-            transcript = transcript.translate(parsedArgs.translate);
+            // Explicit assignment to ensure proper typing
+            const translatedTranscript = transcript.translate(parsedArgs.translate);
+            transcript = translatedTranscript;
         }
 
         return transcript.fetch();
@@ -193,18 +199,61 @@ export class YouTubeTranscriptCli {
             )
             .arguments("<video_ids...>")
             .action((videoIds) => {
-                program.videoIds = videoIds;
+                program.videoIds = videoIds as string[];
             });
 
         program.parse(this.args);
 
-        const options = program.opts();
-        const videoIds = this.sanitizeVideoIds(program.videoIds ?? []);
+        // Safely handle potentially unknown options data
+        const safeVideoIds = isStringArray(program.videoIds) ? program.videoIds : [];
+        const videoIds = this.sanitizeVideoIds(safeVideoIds);
 
-        return {
-            ...options,
-            videoIds
-        } as ParsedArgs;
+        // Use eslint disable for this block since we're extracting potentially unsafe data
+        // But we validate each property before using it
+         
+         
+        const cmdOptions = program.opts();
+         
+         
+
+        // Extract and validate each option with explicit type checking
+        let languages: string[] = ['en'];
+        if (Array.isArray(cmdOptions.languages)) {
+            languages = cmdOptions.languages.filter((l): l is string => typeof l === 'string');
+            if (languages.length === 0) {
+                languages = ['en'];
+            }
+        }
+
+        // Rest of the options - explicit type checking ensures type safety
+        const format = typeof cmdOptions.format === 'string' ? cmdOptions.format : 'pretty';
+        const listTranscripts = cmdOptions.listTranscripts === true;
+        const excludeManuallyCreated = cmdOptions.excludeManuallyCreated === true;
+        const excludeGenerated = cmdOptions.excludeGenerated === true;
+        const httpProxy = typeof cmdOptions.httpProxy === 'string' ? cmdOptions.httpProxy : undefined;
+        const httpsProxy = typeof cmdOptions.httpsProxy === 'string' ? cmdOptions.httpsProxy : undefined;
+        const webshareProxyUsername = typeof cmdOptions.webshareProxyUsername === 'string' ? cmdOptions.webshareProxyUsername : undefined;
+        const webshareProxyPassword = typeof cmdOptions.webshareProxyPassword === 'string' ? cmdOptions.webshareProxyPassword : undefined;
+        const cookies = typeof cmdOptions.cookies === 'string' ? cmdOptions.cookies : undefined;
+        const translate = typeof cmdOptions.translate === 'string' ? cmdOptions.translate : undefined;
+
+        // Create parsedArgs with validated values
+        const parsedArgs: ParsedArgs = {
+            videoIds,
+            languages,
+            format,
+            listTranscripts,
+            excludeManuallyCreated,
+            excludeGenerated,
+            httpProxy,
+            httpsProxy,
+            webshareProxyUsername,
+            webshareProxyPassword,
+            cookies,
+            translate
+        };
+
+        return parsedArgs;
     }
 
     private sanitizeVideoIds(videoIds: string[]): string[] {

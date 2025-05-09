@@ -45,7 +45,7 @@ export class CouldNotRetrieveTranscript extends YouTubeTranscriptApiException {
     protected static CAUSE_MESSAGE = "";
     protected static GITHUB_REFERRAL = "\n\nIf you are sure that the described cause is not responsible for this error " +
         "and that a transcript should be retrievable, please create an issue at " +
-        "https://github.com/jdepoix/youtube-transcriber/issues. " +
+        "https://github.com/SourceShift/youtube-transcriber/issues. " +
         "Please add which version of youtube_transcript_api you are using " +
         "and provide the information needed to replicate the error. " +
         "Also make sure that there are no open issues which already describe your problem!";
@@ -118,7 +118,7 @@ export class VideoUnplayable extends CouldNotRetrieveTranscript {
     }
 
     get cause(): string {
-        const reason = this.reason === null ? "No reason specified!" : this.reason;
+        const reason = this.reason ?? "No reason specified!";
         let result = (this.constructor as typeof VideoUnplayable).CAUSE_MESSAGE.replace("{reason}", reason);
 
         if (this.subReasons.length > 0) {
@@ -164,7 +164,7 @@ export class RequestBlocked extends CouldNotRetrieveTranscript {
         }There are two things you can do to work around this:\n` +
         `1. Use proxies to hide your IP address, as explained in the "Working around ` +
         `IP bans" section of the README ` +
-        `(https://github.com/jdepoix/youtube-transcriber` +
+        `(https://github.com/SourceShift/youtube-transcriber` +
         `?tab=readme-ov-file` +
         `#working-around-ip-bans-requestblocked-or-ipblocked-exception).\n` +
         `2. (NOT RECOMMENDED) If you authenticate your requests using cookies, you ` +
@@ -181,7 +181,7 @@ export class RequestBlocked extends CouldNotRetrieveTranscript {
         "with a pool of >30M residential IPs (make sure to purchase " +
         '"Residential" proxies, NOT "Proxy Server" or "Static Residential"!).\n\n' +
         "You will find more information on how to easily integrate Webshare here: " +
-        "https://github.com/jdepoix/youtube-transcriber" +
+        "https://github.com/SourceShift/youtube-transcriber" +
         "?tab=readme-ov-file#using-webshare";
 
     static WITH_WEBSHARE_PROXY_CAUSE_MESSAGE = "YouTube is blocking your requests, despite you using Webshare proxies. " +
@@ -211,9 +211,9 @@ export class RequestBlocked extends CouldNotRetrieveTranscript {
     }
 
     get cause(): string {
-        if (this.proxyConfig?.isWebshare) {
+        if (this.proxyConfig?.isWebshare === true) {
             return (this.constructor as typeof RequestBlocked).WITH_WEBSHARE_PROXY_CAUSE_MESSAGE;
-        } else if (this.proxyConfig?.isGeneric) {
+        } else if (this.proxyConfig?.isGeneric === true) {
             return (this.constructor as typeof RequestBlocked).WITH_GENERIC_PROXY_CAUSE_MESSAGE;
         }
         return super.cause;
@@ -248,7 +248,7 @@ export class AgeRestricted extends CouldNotRetrieveTranscript {
     static CAUSE_MESSAGE = "This video is age-restricted. Therefore, you will have to authenticate to be " +
         "able to retrieve transcripts for it. You will have to provide a cookie to " +
         'authenticate yourself, as explained in the "Cookie Authentication" section of ' +
-        "the README (https://github.com/jdepoix/youtube-transcriber" +
+        "the README (https://github.com/SourceShift/youtube-transcriber" +
         "?tab=readme-ov-file#cookie-authentication)";
 
     constructor(videoId: string) {

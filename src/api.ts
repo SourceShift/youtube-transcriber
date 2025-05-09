@@ -74,12 +74,12 @@ export class YouTubeTranscriptApi {
         }
 
         // Set up cookies if provided
-        if (cookiePath && cookiePath.trim() !== '') {
+        if (cookiePath !== undefined && cookiePath.trim() !== '') {
             const cookieJar = loadCookieJar(cookiePath);
             // Use the wrapper function correctly
             axiosClient = wrapper(axiosClient);
-            // Add the jar property to defaults
-            (axiosClient.defaults as any).jar = cookieJar;
+            // Add the jar property to defaults with proper typing
+            (axiosClient.defaults as { jar?: CookieJar }).jar = cookieJar;
         }
 
         // Set up proxies if provided
@@ -90,9 +90,9 @@ export class YouTubeTranscriptApi {
             const httpProxy = proxyDict.http;
             const httpsProxy = proxyDict.https;
 
-            if ((httpProxy !== undefined && httpProxy !== '') || (httpsProxy !== undefined && httpsProxy !== '')) {
+            if ((httpProxy && httpProxy !== '') || (httpsProxy && httpsProxy !== '')) {
                 // Parse the proxy URL to extract host, port, and auth
-                const proxyUrl = httpsProxy !== '' ? httpsProxy : httpProxy;
+                const proxyUrl = httpsProxy ? httpsProxy : httpProxy;
                 try {
                     const url = new URL(proxyUrl);
                     axiosClient.defaults.proxy = {
@@ -165,8 +165,8 @@ export class YouTubeTranscriptApi {
             cookies,
             proxies ? {
                 toRequestsDict: () => ({
-                    http: proxies.http ?? '',
-                    https: proxies.https ?? ''
+                    http: proxies.http || '',
+                    https: proxies.https || ''
                 }),
                 preventKeepingConnectionsAlive: false,
                 retriesWhenBlocked: 0,
@@ -201,8 +201,8 @@ export class YouTubeTranscriptApi {
             } else {
                 proxyConfig = {
                     toRequestsDict: () => ({
-                        http: (proxies).http ?? '',
-                        https: (proxies).https ?? ''
+                        http: proxies.http || '',
+                        https: proxies.https || ''
                     }),
                     preventKeepingConnectionsAlive: false,
                     retriesWhenBlocked: 0,
@@ -248,8 +248,8 @@ export class YouTubeTranscriptApi {
             cookies,
             proxies ? {
                 toRequestsDict: () => ({
-                    http: proxies.http ?? '',
-                    https: proxies.https ?? ''
+                    http: proxies.http || '',
+                    https: proxies.https || ''
                 }),
                 preventKeepingConnectionsAlive: false,
                 retriesWhenBlocked: 0,

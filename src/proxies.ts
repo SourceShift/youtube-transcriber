@@ -18,9 +18,7 @@ export abstract class ProxyConfig {
      * client from keeping TCP connections alive, as your IP won't be rotated on
      * every request, if your connection stays open.
      */
-    get preventKeepingConnectionsAlive(): boolean {
-        return false;
-    }
+    readonly preventKeepingConnectionsAlive: boolean = false;
 
     /**
      * Defines how many times we should retry if a request is blocked. When using
@@ -28,17 +26,10 @@ export abstract class ProxyConfig {
      * couple of times when a blocked IP is encountered, since a retry will trigger
      * an IP rotation and the next IP might not be blocked.
      */
-    get retriesWhenBlocked(): number {
-        return 0;
-    }
+    readonly retriesWhenBlocked: number = 0;
 
-    get isGeneric(): boolean {
-        return false;
-    }
-
-    get isWebshare(): boolean {
-        return false;
-    }
+    readonly isGeneric: boolean = false;
+    readonly isWebshare: boolean = false;
 }
 
 export class GenericProxyConfig extends ProxyConfig {
@@ -47,7 +38,7 @@ export class GenericProxyConfig extends ProxyConfig {
 
     constructor(httpUrl: string | null = null, httpsUrl: string | null = null) {
         super();
-        if (!httpUrl && !httpsUrl) {
+        if ((httpUrl === null || httpUrl === '') && (httpsUrl === null || httpsUrl === '')) {
             throw new InvalidProxyConfig(
                 "GenericProxyConfig requires you to define at least one of the two: http or https"
             );
@@ -58,14 +49,12 @@ export class GenericProxyConfig extends ProxyConfig {
 
     toRequestsDict(): RequestsProxyConfigDict {
         return {
-            http: this.httpUrl || this.httpsUrl || "",
-            https: this.httpsUrl || this.httpUrl || ""
+            http: this.httpUrl ?? this.httpsUrl ?? "",
+            https: this.httpsUrl ?? this.httpUrl ?? ""
         };
     }
 
-    get isGeneric(): boolean {
-        return true;
-    }
+    override readonly isGeneric = true;
 }
 
 export class WebshareProxyConfig extends ProxyConfig {
@@ -76,7 +65,6 @@ export class WebshareProxyConfig extends ProxyConfig {
     private proxyPassword: string;
     private domainName: string;
     private proxyPort: number;
-    private _retriesWhenBlocked: number;
 
     constructor(
         proxyUsername: string,
@@ -90,7 +78,7 @@ export class WebshareProxyConfig extends ProxyConfig {
         this.proxyPassword = proxyPassword;
         this.domainName = domainName;
         this.proxyPort = proxyPort;
-        this._retriesWhenBlocked = retriesWhenBlocked;
+        this.retriesWhenBlocked = retriesWhenBlocked;
     }
 
     get url(): string {
@@ -112,19 +100,8 @@ export class WebshareProxyConfig extends ProxyConfig {
         };
     }
 
-    get preventKeepingConnectionsAlive(): boolean {
-        return true;
-    }
-
-    get retriesWhenBlocked(): number {
-        return this._retriesWhenBlocked;
-    }
-
-    get isWebshare(): boolean {
-        return true;
-    }
-
-    get isGeneric(): boolean {
-        return false;
-    }
+    override readonly preventKeepingConnectionsAlive: boolean = true;
+    override readonly retriesWhenBlocked: number;
+    override readonly isWebshare: boolean = true;
+    override readonly isGeneric: boolean = false;
 }
