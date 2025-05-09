@@ -69,8 +69,8 @@ export class GenericProxyConfig extends ProxyConfig {
 }
 
 export class WebshareProxyConfig extends ProxyConfig {
-    static DEFAULT_DOMAIN_NAME = "p.webshare.io";
-    static DEFAULT_PORT = 80;
+    static readonly DEFAULT_DOMAIN_NAME = "p.webshare.io";
+    static readonly DEFAULT_PORT = 80;
 
     private proxyUsername: string;
     private proxyPassword: string;
@@ -94,7 +94,7 @@ export class WebshareProxyConfig extends ProxyConfig {
     }
 
     get url(): string {
-        return `http://${this.proxyUsername}-rotate:${this.proxyPassword}@${this.domainName}:${this.proxyPort}/`;
+        return `http://${this.proxyUsername}-rotate:${this.proxyPassword}@${this.domainName}:${String(this.proxyPort)}/`;
     }
 
     get httpUrl(): string {

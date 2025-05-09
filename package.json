@@ -14,6 +14,7 @@
     "lint": "eslint --ext .ts src/",
     "lint:fix": "eslint --ext .ts src/ --fix",
     "lint:report": "eslint --ext .ts src/ --output-file eslint-report.json --format json",
+    "lint:auto-fix": "eslint --ext .ts src/ --fix",
     "test": "jest",
     "test:watch": "jest --watch",
     "test:coverage": "jest --coverage"

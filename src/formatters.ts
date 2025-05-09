@@ -118,7 +118,7 @@ export class WebVTTFormatter extends TextBasedFormatter {
 }
 
 export class FormatterLoader {
-    static TYPES: Record<string, new () => Formatter> = {
+    static readonly TYPES: Record<string, new () => Formatter> = {
         "json": JSONFormatter,
         "pretty": PrettyPrintFormatter,
         "text": TextFormatter,
@@ -126,7 +126,7 @@ export class FormatterLoader {
         "srt": SRTFormatter
     };
 
-    static UnknownFormatterType = class extends Error {
+    static readonly UnknownFormatterType = class extends Error {
         constructor(formatterType: string) {
             super(`The format '${formatterType}' is not supported. Choose one of the following formats: ${Object.keys(FormatterLoader.TYPES).join(", ")}`);
             this.name = 'UnknownFormatterType';

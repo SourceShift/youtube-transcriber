@@ -103,7 +103,7 @@ export class YouTubeTranscriptCli {
             transcript = transcript.translate(parsedArgs.translate);
         }
 
-        return await transcript.fetch();
+        return transcript.fetch();
     }
 
     private parseArgs(): any {

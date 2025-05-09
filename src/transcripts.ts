@@ -58,7 +58,7 @@ export class FetchedTranscript {
         this.isGenerated = isGenerated;
     }
 
-    [Symbol.iterator]() {
+    [Symbol.iterator](): Iterator<FetchedTranscriptSnippet> {
         return this.snippets[Symbol.iterator]();
     }
 
@@ -516,7 +516,7 @@ class JsVarParser {
         const jsonData = jsonStr.substring(0, endIndex);
         try {
             return JSON.parse(jsonData);
-        } catch (e) {
+        } catch (_e) {
             throw new YouTubeDataUnparsable(videoId);
         }
     }
