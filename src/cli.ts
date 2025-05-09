@@ -210,11 +210,11 @@ export class YouTubeTranscriptCli {
 
         // Use eslint disable for this block since we're extracting potentially unsafe data
         // But we validate each property before using it
-         
-         
+
+
         const cmdOptions = program.opts();
-         
-         
+
+
 
         // Extract and validate each option with explicit type checking
         let languages: string[] = ['en'];
@@ -230,12 +230,12 @@ export class YouTubeTranscriptCli {
         const listTranscripts = cmdOptions.listTranscripts === true;
         const excludeManuallyCreated = cmdOptions.excludeManuallyCreated === true;
         const excludeGenerated = cmdOptions.excludeGenerated === true;
-        const httpProxy = typeof cmdOptions.httpProxy === 'string' ? cmdOptions.httpProxy : undefined;
-        const httpsProxy = typeof cmdOptions.httpsProxy === 'string' ? cmdOptions.httpsProxy : undefined;
-        const webshareProxyUsername = typeof cmdOptions.webshareProxyUsername === 'string' ? cmdOptions.webshareProxyUsername : undefined;
-        const webshareProxyPassword = typeof cmdOptions.webshareProxyPassword === 'string' ? cmdOptions.webshareProxyPassword : undefined;
+        const httpProxy = typeof cmdOptions.httpProxy === 'string' && cmdOptions.httpProxy !== '' ? cmdOptions.httpProxy : undefined;
+        const httpsProxy = typeof cmdOptions.httpsProxy === 'string' && cmdOptions.httpsProxy !== '' ? cmdOptions.httpsProxy : undefined;
+        const webshareProxyUsername = typeof cmdOptions.webshareProxyUsername === 'string' && cmdOptions.webshareProxyUsername !== '' ? cmdOptions.webshareProxyUsername : undefined;
+        const webshareProxyPassword = typeof cmdOptions.webshareProxyPassword === 'string' && cmdOptions.webshareProxyPassword !== '' ? cmdOptions.webshareProxyPassword : undefined;
         const cookies = typeof cmdOptions.cookies === 'string' ? cmdOptions.cookies : undefined;
-        const translate = typeof cmdOptions.translate === 'string' ? cmdOptions.translate : undefined;
+        const translate = typeof cmdOptions.translate === 'string' && cmdOptions.translate !== '' ? cmdOptions.translate : undefined;
 
         // Create parsedArgs with validated values
         const parsedArgs: ParsedArgs = {
