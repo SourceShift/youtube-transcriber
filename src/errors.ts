@@ -223,7 +223,7 @@ export class RequestBlocked extends CouldNotRetrieveTranscript {
 export class IpBlocked extends RequestBlocked {
     static CAUSE_MESSAGE = `${RequestBlocked.BASE_CAUSE_MESSAGE
         }Ways to work around this are explained in the "Working around IP ` +
-        `bans" section of the README (https://github.com/jdepoix/youtube-transcriber` +
+        `bans" section of the README (https://github.com/SourceShift/youtube-transcriber` +
         `?tab=readme-ov-file` +
         `#working-around-ip-bans-requestblocked-or-ipblocked-exception).\n`;
 
