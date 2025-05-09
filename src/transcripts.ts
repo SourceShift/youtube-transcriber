@@ -88,6 +88,48 @@ enum PlayabilityFailedReason {
     VIDEO_UNAVAILABLE = "Video unavailable"
 }
 
+// Add interfaces for YouTube API data structures
+interface CaptionTrack {
+    baseUrl: string;
+    name: {
+        simpleText: string;
+    };
+    languageCode: string;
+    kind: string;
+    isTranslatable: boolean;
+}
+
+interface TranslationLanguageData {
+    languageName: {
+        simpleText: string;
+    };
+    languageCode: string;
+}
+
+interface CaptionsJson {
+    captionTracks?: CaptionTrack[];
+    translationLanguages?: TranslationLanguageData[];
+}
+
+interface VideoData {
+    playabilityStatus?: {
+        status?: PlayabilityStatus | string;
+        reason?: PlayabilityFailedReason | string;
+        errorScreen?: {
+            playerErrorMessageRenderer?: {
+                subreason?: {
+                    runs?: {
+                        text?: string;
+                    }[];
+                };
+            };
+        };
+    };
+    captions?: {
+        playerCaptionsTracklistRenderer?: CaptionsJson;
+    };
+}
+
 export class Transcript {
     private httpClient: AxiosInstance;
     videoId: string;
@@ -122,7 +164,7 @@ export class Transcript {
     async fetch(preserveFormatting = false): Promise<FetchedTranscript> {
         const response = await this.httpClient.get(this.url);
         const parser = new TranscriptParser(preserveFormatting);
-        const snippets = parser.parse(response.data);
+        const snippets = parser.parse(response.data as string);
 
         return new FetchedTranscript(
             snippets,
@@ -183,10 +225,10 @@ export class TranscriptList {
     static build(
         httpClient: AxiosInstance,
         videoId: string,
-        captionsJson: any
+        captionsJson: CaptionsJson
     ): TranscriptList {
-        const translationLanguages: TranslationLanguage[] = (captionsJson.translationLanguages || []).map(
-            (tl: any) => ({
+        const translationLanguages: TranslationLanguage[] = (captionsJson.translationLanguages ?? []).map(
+            (tl: TranslationLanguageData) => ({
                 language: tl.languageName.simpleText,
                 languageCode: tl.languageCode
             })
@@ -195,7 +237,7 @@ export class TranscriptList {
         const manuallyCreatedTranscripts: Record<string, Transcript> = {};
         const generatedTranscripts: Record<string, Transcript> = {};
 
-        for (const caption of captionsJson.captionTracks || []) {
+        for (const caption of captionsJson.captionTracks ?? []) {
             const transcriptDict = caption.kind === "asr" ? generatedTranscripts : manuallyCreatedTranscripts;
 
             transcriptDict[caption.languageCode] = new Transcript(
@@ -296,19 +338,19 @@ export class TranscriptListFetcher {
         );
     }
 
-    private async fetchCaptionsJson(videoId: string, tryNumber = 0): Promise<any> {
+    private async fetchCaptionsJson(videoId: string, tryNumber = 0): Promise<CaptionsJson> {
         try {
             const html = await this.fetchVideoHtml(videoId);
             return this.extractCaptionsJson(html, videoId);
         } catch (error) {
             if (error instanceof RequestBlocked) {
-                const retries = this.proxyConfig?.retriesWhenBlocked || 0;
+                const retries = this.proxyConfig?.retriesWhenBlocked ?? 0;
                 if (tryNumber + 1 < retries) {
                     return this.fetchCaptionsJson(videoId, tryNumber + 1);
                 }
                 if (error instanceof Error &&
-                    typeof (error as any).withProxyConfig === 'function') {
-                    throw (error as any).withProxyConfig(this.proxyConfig);
+                    typeof error.withProxyConfig === 'function') {
+                    throw error.withProxyConfig(this.proxyConfig);
                 } else {
                     throw error;
                 }
@@ -317,9 +359,9 @@ export class TranscriptListFetcher {
         }
     }
 
-    private extractCaptionsJson(html: string, videoId: string): any {
+    private extractCaptionsJson(html: string, videoId: string): CaptionsJson {
         const varParser = new JsVarParser("ytInitialPlayerResponse");
-        let videoData;
+        let videoData: VideoData;
 
         try {
             videoData = varParser.parse(html, videoId);
@@ -333,57 +375,69 @@ export class TranscriptListFetcher {
         this.assertPlayability(videoData.playabilityStatus, videoId);
 
         const captionsJson = videoData.captions?.playerCaptionsTracklistRenderer;
-        if (!captionsJson?.captionTracks) {
+        if (captionsJson?.captionTracks === undefined) {
             throw new TranscriptsDisabled(videoId);
         }
 
         return captionsJson;
     }
 
-    private assertPlayability(playabilityStatusData: any, videoId: string): void {
-        const playabilityStatus = playabilityStatusData?.status;
-        if (playabilityStatus && playabilityStatus !== PlayabilityStatus.OK) {
+    private assertPlayability(playabilityStatusData: VideoData['playabilityStatus'], videoId: string): void {
+        // Return early if playabilityStatusData is undefined
+        if (!playabilityStatusData) {
+            return;
+        }
+
+        const playabilityStatus = playabilityStatusData.status;
+        if (playabilityStatus !== undefined && playabilityStatus !== "OK") {
             const reason = playabilityStatusData.reason;
-            if (playabilityStatus === PlayabilityStatus.LOGIN_REQUIRED) {
-                if (reason === PlayabilityFailedReason.BOT_DETECTED) {
+
+            // Check if we're dealing with LOGIN_REQUIRED status
+            if (playabilityStatus === "LOGIN_REQUIRED") {
+                if (reason === "Sign in to confirm you're not a bot") {
                     throw new RequestBlocked(videoId);
                 }
-                if (reason === PlayabilityFailedReason.AGE_RESTRICTED) {
+                if (reason === "Sign in to confirm your age") {
                     throw new AgeRestricted(videoId);
                 }
             }
+
+            // Check if we're dealing with ERROR status
             if (
-                playabilityStatus === PlayabilityStatus.ERROR &&
-                reason === PlayabilityFailedReason.VIDEO_UNAVAILABLE
+                playabilityStatus === "ERROR" &&
+                reason === "Video unavailable"
             ) {
                 if (videoId.startsWith("http://") || videoId.startsWith("https://")) {
                     throw new InvalidVideoId(videoId);
                 }
                 throw new VideoUnavailable(videoId);
             }
-            const subreasons = playabilityStatusData?.errorScreen?.playerErrorMessageRenderer?.subreason?.runs || [];
+
+            const subreasons = playabilityStatusData.errorScreen?.playerErrorMessageRenderer?.subreason?.runs ?? [];
+            const errorTexts: string[] = subreasons.map((run) => run.text ?? "");
             throw new VideoUnplayable(
                 videoId,
-                reason,
-                subreasons.map((run: any) => run.text || "")
+                reason ?? "",
+                errorTexts
             );
         }
     }
 
-    private async createConsentCookie(html: string, videoId: string): Promise<void> {
+    private createConsentCookie(html: string, videoId: string): void {
         const match = /name="v" value="(.*?)"/.exec(html);
-        if (!match) {
+        if (match === null) {
             throw new FailedToCreateConsentCookie(videoId);
         }
 
         // Set cookie on axios instance
-        this.httpClient.defaults.headers.common.Cookie = `CONSENT=YES+${match[1]}`;
+        const cookieValue = `CONSENT=YES+${match[1]}`;
+        this.httpClient.defaults.headers.common.Cookie = cookieValue;
     }
 
     private async fetchVideoHtml(videoId: string): Promise<string> {
         let html = await this.fetchHtml(videoId);
         if (html.includes('action="https://consent.youtube.com/s"')) {
-            await this.createConsentCookie(html, videoId);
+            this.createConsentCookie(html, videoId);
             html = await this.fetchHtml(videoId);
             if (html.includes('action="https://consent.youtube.com/s"')) {
                 throw new FailedToCreateConsentCookie(videoId);
@@ -395,7 +449,7 @@ export class TranscriptListFetcher {
     private async fetchHtml(videoId: string): Promise<string> {
         const url = WATCH_URL.replace("{video_id}", videoId);
         const response = await this.httpClient.get(url);
-        return this.unescapeHtml(response.data);
+        return this.unescapeHtml(response.data as string);
     }
 
     private unescapeHtml(html: string): string {
@@ -441,10 +495,10 @@ class TranscriptParser {
         return elements
             .filter(element => element.textContent !== null)
             .map(element => {
-                const text = element.textContent || "";
+                const text = element.textContent ?? "";
                 const cleanedText = text.replace(this.htmlRegex, "");
-                const start = parseFloat(element.getAttribute("start") || "0");
-                const duration = parseFloat(element.getAttribute("dur") || "0.0");
+                const start = parseFloat(element.getAttribute("start") ?? "0");
+                const duration = parseFloat(element.getAttribute("dur") ?? "0.0");
 
                 return new FetchedTranscriptSnippet(cleanedText, start, duration);
             });
@@ -458,7 +512,7 @@ class JsVarParser {
         this.varName = varName;
     }
 
-    parse(rawHtml: string, videoId: string): any {
+    parse(rawHtml: string, videoId: string): VideoData {
         const splittedHtml = rawHtml.split(`var ${this.varName}`);
         if (splittedHtml.length <= 1) {
             throw new YouTubeDataUnparsable(videoId);
@@ -515,9 +569,17 @@ class JsVarParser {
 
         const jsonData = jsonStr.substring(0, endIndex);
         try {
-            return JSON.parse(jsonData);
-        } catch (_e) {
+            return JSON.parse(jsonData) as VideoData;
+        } catch {
+            // Catch parsing errors and throw our custom error
             throw new YouTubeDataUnparsable(videoId);
         }
+    }
+}
+
+// Add interface for Error with withProxyConfig method
+declare global {
+    interface Error {
+        withProxyConfig?: (config: ProxyConfig | null) => Error;
     }
 }
