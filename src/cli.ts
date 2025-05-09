@@ -9,6 +9,22 @@ interface ExtendedCommand extends Command {
     videoIds?: string[];
 }
 
+// Interface for parsed command line arguments
+interface ParsedArgs {
+    videoIds: string[];
+    listTranscripts?: boolean;
+    excludeManuallyCreated?: boolean;
+    excludeGenerated?: boolean;
+    httpProxy?: string;
+    httpsProxy?: string;
+    webshareProxyUsername?: string;
+    webshareProxyPassword?: string;
+    cookies?: string;
+    languages: string[];
+    format: string;
+    translate?: string;
+}
+
 export class YouTubeTranscriptCli {
     private args: string[];
 
@@ -19,22 +35,22 @@ export class YouTubeTranscriptCli {
     async run(): Promise<string> {
         const parsedArgs = this.parseArgs();
 
-        if (parsedArgs.excludeManuallyCreated && parsedArgs.excludeGenerated) {
+        if (parsedArgs.excludeManuallyCreated === true && parsedArgs.excludeGenerated === true) {
             return "";
         }
 
         let proxyConfig: ProxyConfig | undefined = undefined;
-        if (parsedArgs.httpProxy || parsedArgs.httpsProxy) {
+        if (parsedArgs.httpProxy !== undefined || parsedArgs.httpsProxy !== undefined) {
             proxyConfig = new GenericProxyConfig(
-                parsedArgs.httpProxy,
-                parsedArgs.httpsProxy
+                parsedArgs.httpProxy ?? null,
+                parsedArgs.httpsProxy ?? null
             );
         }
 
-        if (parsedArgs.webshareProxyUsername || parsedArgs.webshareProxyPassword) {
+        if (parsedArgs.webshareProxyUsername !== undefined || parsedArgs.webshareProxyPassword !== undefined) {
             proxyConfig = new WebshareProxyConfig(
-                parsedArgs.webshareProxyUsername || '',
-                parsedArgs.webshareProxyPassword || ''
+                parsedArgs.webshareProxyUsername ?? '',
+                parsedArgs.webshareProxyPassword ?? ''
             );
         }
 
@@ -51,7 +67,7 @@ export class YouTubeTranscriptCli {
         for (const videoId of parsedArgs.videoIds) {
             try {
                 const transcriptList = await api.list(videoId);
-                if (parsedArgs.listTranscripts) {
+                if (parsedArgs.listTranscripts === true) {
                     transcripts.push(transcriptList);
                 } else {
                     transcripts.push(
@@ -69,15 +85,27 @@ export class YouTubeTranscriptCli {
         const printSections: string[] = exceptions.map(exception => exception.toString());
 
         if (transcripts.length > 0) {
-            if (parsedArgs.listTranscripts) {
+            if (parsedArgs.listTranscripts === true) {
                 printSections.push(
-                    ...transcripts.map(t => t.toString())
+                    ...transcripts.map(t => {
+                        if (typeof t.toString === 'function') {
+                            return t.toString();
+                        }
+                        return String(t);
+                    })
                 );
             } else {
+                const transcriptsAsTextArray = transcripts.map(t => {
+                    if (t instanceof FetchedTranscript) {
+                        return t;
+                    }
+                    return null;
+                }).filter((t): t is FetchedTranscript => t !== null);
+
                 printSections.push(
                     new FormatterLoader()
                         .load(parsedArgs.format)
-                        .formatTranscripts(transcripts as FetchedTranscript[])
+                        .formatTranscripts(transcriptsAsTextArray)
                 );
             }
         }
@@ -86,27 +114,27 @@ export class YouTubeTranscriptCli {
     }
 
     private async fetchTranscript(
-        parsedArgs: any,
+        parsedArgs: ParsedArgs,
         transcriptList: TranscriptList
     ): Promise<FetchedTranscript> {
         let transcript;
 
-        if (parsedArgs.excludeManuallyCreated) {
+        if (parsedArgs.excludeManuallyCreated === true) {
             transcript = transcriptList.findGeneratedTranscript(parsedArgs.languages);
-        } else if (parsedArgs.excludeGenerated) {
+        } else if (parsedArgs.excludeGenerated === true) {
             transcript = transcriptList.findManuallyCreatedTranscript(parsedArgs.languages);
         } else {
             transcript = transcriptList.findTranscript(parsedArgs.languages);
         }
 
-        if (parsedArgs.translate) {
+        if (parsedArgs.translate !== undefined && parsedArgs.translate !== '') {
             transcript = transcript.translate(parsedArgs.translate);
         }
 
         return transcript.fetch();
     }
 
-    private parseArgs(): any {
+    private parseArgs(): ParsedArgs {
         const program = new Command() as ExtendedCommand;
 
         program
@@ -171,9 +199,12 @@ export class YouTubeTranscriptCli {
         program.parse(this.args);
 
         const options = program.opts();
-        options.videoIds = this.sanitizeVideoIds(program.videoIds || []);
+        const videoIds = this.sanitizeVideoIds(program.videoIds ?? []);
 
-        return options;
+        return {
+            ...options,
+            videoIds
+        } as ParsedArgs;
     }
 
     private sanitizeVideoIds(videoIds: string[]): string[] {

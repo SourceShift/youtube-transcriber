@@ -1,10 +1,17 @@
 // Forward declaration to avoid circular dependency
 interface FetchedTranscript {
     snippets: FetchedTranscriptSnippet[];
-    toRawData(): any[];
+    toRawData(): TranscriptData[];
 }
 
 interface FetchedTranscriptSnippet {
+    text: string;
+    start: number;
+    duration: number;
+}
+
+// Define a type for transcript data
+export interface TranscriptData {
     text: string;
     start: number;
     duration: number;
@@ -14,45 +21,43 @@ export abstract class Formatter {
     /**
      * Format a transcript into a string.
      * @param transcript The transcript to format.
-     * @param kwargs Additional options for formatting.
      */
-    abstract formatTranscript(transcript: FetchedTranscript, kwargs?: Record<string, any>): string;
+    abstract formatTranscript(transcript: FetchedTranscript): string;
 
     /**
      * Format multiple transcripts into a string.
      * @param transcripts The transcripts to format.
-     * @param kwargs Additional options for formatting.
      */
-    abstract formatTranscripts(transcripts: FetchedTranscript[], kwargs?: Record<string, any>): string;
+    abstract formatTranscripts(transcripts: FetchedTranscript[]): string;
 }
 
 export class PrettyPrintFormatter extends Formatter {
-    formatTranscript(transcript: FetchedTranscript, _kwargs?: Record<string, any>): string {
+    formatTranscript(transcript: FetchedTranscript): string {
         return JSON.stringify(transcript.toRawData(), null, 2);
     }
 
-    formatTranscripts(transcripts: FetchedTranscript[], _kwargs?: Record<string, any>): string {
+    formatTranscripts(transcripts: FetchedTranscript[]): string {
         return JSON.stringify(transcripts.map(t => t.toRawData()), null, 2);
     }
 }
 
 export class JSONFormatter extends Formatter {
-    formatTranscript(transcript: FetchedTranscript, _kwargs?: Record<string, any>): string {
+    formatTranscript(transcript: FetchedTranscript): string {
         return JSON.stringify(transcript.toRawData());
     }
 
-    formatTranscripts(transcripts: FetchedTranscript[], _kwargs?: Record<string, any>): string {
+    formatTranscripts(transcripts: FetchedTranscript[]): string {
         return JSON.stringify(transcripts.map(t => t.toRawData()));
     }
 }
 
 export class TextFormatter extends Formatter {
-    formatTranscript(transcript: FetchedTranscript, _kwargs?: Record<string, any>): string {
+    formatTranscript(transcript: FetchedTranscript): string {
         return transcript.snippets.map(line => line.text).join("\n");
     }
 
-    formatTranscripts(transcripts: FetchedTranscript[], _kwargs?: Record<string, any>): string {
-        return transcripts.map(transcript => this.formatTranscript(transcript, _kwargs)).join("\n\n\n");
+    formatTranscripts(transcripts: FetchedTranscript[]): string {
+        return transcripts.map(transcript => this.formatTranscript(transcript)).join("\n\n\n");
     }
 }
 
@@ -74,7 +79,7 @@ export abstract class TextBasedFormatter extends TextFormatter {
         return this.formatTimestamp(hours, mins, secs, ms);
     }
 
-    formatTranscript(transcript: FetchedTranscript, _kwargs?: Record<string, any>): string {
+    formatTranscript(transcript: FetchedTranscript): string {
         const lines: string[] = [];
         for (let i = 0; i < transcript.snippets.length; i++) {
             const line = transcript.snippets[i];
@@ -99,7 +104,7 @@ export class SRTFormatter extends TextBasedFormatter {
     }
 
     protected formatTranscriptHelper(_i: number, timeText: string, snippet: FetchedTranscriptSnippet): string {
-        return `${_i + 1}\n${timeText}\n${snippet.text}`;
+        return `${String(_i + 1)}\n${timeText}\n${snippet.text}`;
     }
 }
 
