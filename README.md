@@ -1,6 +1,6 @@
 # YouTube Transcript API - TypeScript Port
 
-This is a TypeScript port of the [YouTube Transcript API](https://github.com/jdepoix/youtube-transcriber) originally written in Python. It allows you to get the transcripts/subtitles for a given YouTube video. It also works for automatically generated subtitles and it does not require a headless browser.
+This is a TypeScript port of the [YouTube Transcript API](https://github.com/jdepoix/youtube-transcript-api) originally written in Python. It allows you to get the transcripts/subtitles for a given YouTube video. It also works for automatically generated subtitles and it does not require a headless browser.
 
 ## Installation
 
@@ -151,4 +151,4 @@ make transcript ARGS="VIDEO_ID --languages en fr"
 
 ## Credits
 
-This is a TypeScript port of the original [YouTube Transcript API](https://github.com/jdepoix/youtube-transcriber) by [jdepoix](https://github.com/jdepoix).
+This is a TypeScript port of the original [YouTube Transcript API](https://github.com/jdepoix/youtube-transcript-api) by [jdepoix](https://github.com/jdepoix).
