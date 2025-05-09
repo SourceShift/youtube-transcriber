@@ -1,154 +1,223 @@
-# YouTube Transcript API - TypeScript Port
+<h1 align="center">
+  ✨ YouTube Transcript Downloader ✨
+</h1>
 
-This is a TypeScript port of the [YouTube Transcript API](https://github.com/jdepoix/youtube-transcript-api) originally written in Python. It allows you to get the transcripts/subtitles for a given YouTube video. It also works for automatically generated subtitles and it does not require a headless browser.
+<p align="center">
+  <a href="https://github.com/SourceShift/youtube-transcriber/actions/workflows/ci.yml">
+    <img src="https://github.com/SourceShift/youtube-transcriber/actions/workflows/ci.yml/badge.svg?branch=main" alt="CI Status">
+  </a>
+  <!--
+  <a href="https://coveralls.io/github/SourceShift/youtube-transcriber?branch=main">
+    <img src="https://coveralls.io/repos/github/SourceShift/youtube-transcriber/badge.svg?branch=main" alt="Coverage Status">
+  </a>
+  -->
+  <a href="https://opensource.org/licenses/MIT">
+    <img src="https://img.shields.io/badge/License-MIT-yellow.svg" alt="License: MIT">
+  </a>
+  <a href="https://www.npmjs.com/package/youtube-transcriber">
+    <img src="https://img.shields.io/npm/v/youtube-transcriber.svg" alt="npm version">
+  </a>
+  <a href="https://nodejs.org/">
+    <img src="https://img.shields.io/badge/node-%3E%3D16-blue.svg" alt="Node.js versions">
+  </a>
+  <a href="https://www.npmjs.com/package/youtube-transcriber">
+    <img src="https://img.shields.io/npm/dm/youtube-transcriber.svg" alt="npm downloads">
+  </a>
+</p>
 
-## Installation
+<p align="center">
+  <b>This is a TypeScript/Node.js command-line tool and library to download YouTube video transcripts and subtitles. It supports multiple languages, translation, and various output formats without requiring a headless browser.</b>
+</p>
 
+<!--
+<p align="center">
+ Maintenance of this project is made possible by all the <a href="https://github.com/SourceShift/youtube-transcriber/graphs/contributors">contributors</a> and <a href="https://github.com/sponsors/SourceShift">sponsors</a>. If you'd like to sponsor this project and have your avatar or company logo appear below <a href="https://github.com/sponsors/SourceShift">click here</a>. 💖
+</p>
+
+<p align="center">
+  Sponsor logos here e.g.:
+  <a href="https://www.searchapi.io">
+    <picture>
+      <source media="(prefers-color-scheme: dark)" srcset="https://www.searchapi.io/press/v1/svg/searchapi_logo_white_h.svg">
+      <source media="(prefers-color-scheme: light)" srcset="https://www.searchapi.io/press/v1/svg/searchapi_logo_black_h.svg">
+      <img alt="SearchAPI" src="https://www.searchapi.io/press/v1/svg/searchapi_logo_black_h.svg" height="40px" style="vertical-align: middle;">
+    </picture>
+  </a>
+</p>
+-->
+
+## Features
+
+*   Fetches transcripts for any YouTube video.
+*   Supports manually created and automatically generated subtitles.
+*   Allows translation to any language supported by YouTube.
+*   No headless browser required (unlike Selenium-based solutions).
+*   Usable as a CLI tool and a Node.js library.
+*   Multiple output formats (e.g., plain text, JSON, SRT, VTT - via formatters).
+*   Proxy support (Generic HTTP/HTTPS and Webshare).
+*   Cookie authentication for age-restricted videos.
+
+## Install
+
+Install globally to use the CLI:
 ```bash
-# Install dependencies
-npm install
-
-# Build the project
-npm run build
+npm install -g youtube-transcriber
 ```
 
-## Usage
-
-### As a Library
-
-```typescript
-import { YouTubeTranscriptApi } from 'youtube-transcriber';
-
-// Simple usage - get a transcript for a single video
-async function getTranscript() {
-  const api = new YouTubeTranscriptApi();
-  
-  try {
-    // Get transcript in English (default) for a specific video ID
-    const transcript = await api.fetch('video_id_here');
-    
-    // Log each transcript entry
-    transcript.snippets.forEach(snippet => {
-      console.log(`[${snippet.start}-${snippet.start + snippet.duration}]: ${snippet.text}`);
-    });
-    
-    // Get raw data for export
-    const rawData = transcript.toRawData();
-    console.log(JSON.stringify(rawData));
-  } catch (error) {
-    console.error('Error fetching transcript:', error);
-  }
-}
-
-// Get available transcripts
-async function listAvailableTranscripts() {
-  const api = new YouTubeTranscriptApi();
-  
-  try {
-    const transcriptList = await api.list('video_id_here');
-    
-    // Print available languages
-    console.log(transcriptList.toString());
-    
-    // Find transcript in specific languages (in order of preference)
-    const transcript = transcriptList.findTranscript(['de', 'en']);
-    
-    // Or just find manually created ones
-    const manualTranscript = transcriptList.findManuallyCreatedTranscript(['en']);
-    
-    // Or just automatically generated ones
-    const generatedTranscript = transcriptList.findGeneratedTranscript(['en']);
-    
-    // Fetch the transcript data
-    const fetchedTranscript = await transcript.fetch();
-    
-    // If the transcript is translatable, you can translate it
-    if (transcript.isTranslatable) {
-      const translatedTranscript = transcript.translate('fr');
-      const fetchedTranslation = await translatedTranscript.fetch();
-    }
-  } catch (error) {
-    console.error('Error:', error);
-  }
-}
+Or add to your project as a dependency:
+```bash
+npm install youtube-transcriber
+# or
+yarn add youtube-transcriber
 ```
 
-### Advanced Usage with Proxies and Cookies
+## CLI Usage
+
+Get transcript for a video (defaults to English):
+```bash
+youtube-transcriber <video_id>
+```
+
+Specify languages (descending priority):
+```bash
+youtube-transcriber <video_id> --languages es en
+```
+
+Translate to a specific language (e.g., German):
+```bash
+youtube-transcriber <video_id> --languages en --translate de
+```
+
+List available transcripts for a video:
+```bash
+youtube-transcriber <video_id> --list-transcripts
+```
+
+Output in JSON format:
+```bash
+youtube-transcriber <video_id> --format json > transcript.json
+```
+
+Exclude auto-generated transcripts:
+```bash
+youtube-transcriber <video_id> --exclude-generated
+```
+
+Exclude manually-created transcripts:
+```bash
+youtube-transcriber <video_id> --exclude-manually-created
+```
+
+Using proxies:
+```bash
+# Generic HTTP/HTTPS proxy
+youtube-transcriber <video_id> --http-proxy http://user:pass@host:port --https-proxy https://user:pass@host:port
+
+# Webshare rotating residential proxies
+youtube-transcriber <video_id> --webshare-proxy-username <your_username> --webshare-proxy-password <your_password>
+```
+
+Using cookies for authentication (e.g., for age-restricted videos):
+```bash
+youtube-transcriber <video_id> --cookies /path/to/your/cookies.txt
+```
+
+## API Usage
 
 ```typescript
 import { YouTubeTranscriptApi, GenericProxyConfig, WebshareProxyConfig } from 'youtube-transcriber';
 
-// With proxy configuration
-const genericProxy = new GenericProxyConfig('http://your-proxy-url', 'https://your-proxy-url');
+async function getTranscript(videoId: string) {
+  try {
+    // Simple fetch (defaults to English)
+    const transcript = await YouTubeTranscriptApi.fetch(videoId);
+    console.log(JSON.stringify(transcript, null, 2));
 
-// Or with Webshare proxies
-const webshareProxy = new WebshareProxyConfig('your-username', 'your-password');
+    // Fetch with specific languages
+    const transcriptInSpanish = await YouTubeTranscriptApi.fetch(videoId, { languages: ['es', 'en'] });
+    console.log(transcriptInSpanish);
 
-// With cookie authentication for age-restricted videos
-const api = new YouTubeTranscriptApi(
-  '/path/to/cookies.txt',  // Path to cookie file
-  webshareProxy            // Optional proxy configuration
-);
+    // List available transcripts
+    const api = new YouTubeTranscriptApi(); // Instantiate for list or advanced proxy/cookie use
+    const transcriptList = await api.list(videoId);
 
-// Get transcript
-const transcript = await api.fetch('video_id_here', ['en', 'fr']);
+    // Find a specific transcript from the list and fetch it
+    const specificTranscript = transcriptList.findTranscript(['de', 'en']);
+    if (specificTranscript) {
+      const fetched = await specificTranscript.fetch();
+      console.log(fetched);
+
+      // Translate it
+      const translated = await specificTranscript.translate('fr').fetch();
+      console.log(translated);
+    }
+  } catch (error) {
+    console.error(error);
+  }
+}
+
+// Example with Webshare proxy
+async function getTranscriptWithWebshareProxy(videoId: string) {
+  const proxyConfig = new WebshareProxyConfig('YOUR_WEBSHARE_USERNAME', 'YOUR_WEBSHARE_PASSWORD');
+  const api = new YouTubeTranscriptApi(undefined, proxyConfig);
+  try {
+    const transcript = await api.list(videoId).then(list => list.findTranscript(['en'])?.fetch());
+    console.log(transcript);
+  } catch (error) {
+    console.error(error);
+  }
+}
+
+// getTranscript('dQw4w9WgXcQ');
 ```
 
-### Command Line Usage
+## Formatters
 
+This library supports different output formatters for the transcript data. 
+(Details on how to use formatters can be added here once implemented, similar to the Python version).
+
+Available formatters (planned/included):
+*   PlainTextFormatter
+*   JSONFormatter
+*   SRTFormatter
+*   WebVTTFormatter
+
+Example (conceptual):
+```typescript
+// import { YouTubeTranscriptApi, JSONFormatter } from 'youtube-transcriber';
+
+// const transcriptData = await YouTubeTranscriptApi.fetch(videoId);
+// const formatter = new JSONFormatter();
+// const formattedOutput = formatter.formatTranscript(transcriptData, { indent: 2 });
+// console.log(formattedOutput);
+```
+
+## Contributing
+
+Contributions are welcome! Please follow these steps:
+
+1.  Fork the repository.
+2.  Create a new branch (`git checkout -b feature/your-feature-name`).
+3.  Make your changes.
+4.  Ensure tests pass (`npm test`).
+5.  Ensure code is formatted and linted (`npm run format` and `npm run lint`).
+6.  Commit your changes (`git commit -am 'feat: Add some feature'`).
+7.  Push to the branch (`git push origin feature/your-feature-name`).
+8.  Open a Pull Request.
+
+To setup the project locally:
 ```bash
-# List available languages for a video
-npx youtube-transcript --list-transcripts VIDEO_ID
-
-# Get transcript for a video
-npx youtube-transcript VIDEO_ID
-
-# Get transcript in specific languages (in order of preference)
-npx youtube-transcript VIDEO_ID --languages de en
-
-# Format output as JSON
-npx youtube-transcript VIDEO_ID --format json
-
-# Format output as SRT
-npx youtube-transcript VIDEO_ID --format srt
-
-# Get transcript for multiple videos
-npx youtube-transcript VIDEO_ID1 VIDEO_ID2 VIDEO_ID3
-
-# Translate transcript to French
-npx youtube-transcript VIDEO_ID --translate fr
-
-# Using proxies
-npx youtube-transcript VIDEO_ID --http-proxy http://your-proxy-url --https-proxy https://your-proxy-url
-
-# Using Webshare proxies
-npx youtube-transcript VIDEO_ID --webshare-proxy-username your-username --webshare-proxy-password your-password
-
-# Using cookies for authentication (age-restricted videos)
-npx youtube-transcript VIDEO_ID --cookies /path/to/cookies.txt
+npm install
 ```
 
-## Using Makefile
+Useful commands:
+*   `npm run build`: Compile TypeScript to JavaScript.
+*   `npm run lint`: Lint the codebase.
+*   `npm run format`: Format the codebase with Prettier.
+*   `npm test`: Run tests with Jest.
+*   `npm run coverage`: Generate a coverage report.
+*   `npm run precommit`: Runs lint, format, test, and build (useful before committing).
 
-The project includes a Makefile for convenient usage:
+## License
 
-```bash
-# Install dependencies
-make install
-
-# Build the project
-make build
-
-# Clean build artifacts
-make clean
-
-# Run the CLI
-make start
-
-# Get transcript for a video
-make transcript ARGS="VIDEO_ID --languages en fr"
-```
-
-## Credits
-
-This is a TypeScript port of the original [YouTube Transcript API](https://github.com/jdepoix/youtube-transcript-api) by [jdepoix](https://github.com/jdepoix).
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
