@@ -12,6 +12,11 @@ export class YouTubeTranscriptApiException extends Error {
         this.name = 'YouTubeTranscriptApiException';
         Object.setPrototypeOf(this, YouTubeTranscriptApiException.prototype);
     }
+
+    // Add a fallback implementation for the _buildErrorMessage method
+    protected _buildErrorMessage(): string {
+        return this.message;
+    }
 }
 
 export class CookieError extends YouTubeTranscriptApiException {
