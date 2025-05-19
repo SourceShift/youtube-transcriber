@@ -1,21 +1,17 @@
-# YouTube Transcript API v1.0.0
+# YouTube Transcript API v1.0.2
 
-Initial release of the YouTube Transcript API TypeScript port.
+This release adds the GitHub repository link to the npm package metadata, making it easier to find the source code and report issues.
 
-## Features
-- Fetch transcripts from YouTube videos by ID
-- Support for multiple languages and language preferences
-- Automatic transcript detection
-- Manual and generated transcript selection
-- Translation functionality
-- CLI tool with multiple output formats (text, JSON, SRT)
-- Proxy support for networking through restrictive environments
-- Cookie authentication for age-restricted videos
+## Improvements
+- Added GitHub repository, homepage, and issues links to npm package metadata
+- Simplified discovery of documentation and source code
 
 ## Installation
 ```bash
 npm install youtube-transcriber
 ```
 
-## Usage
-See the README.md for detailed usage instructions and examples. 
+## Links
+- GitHub Repository: https://github.com/SourceShift/youtube-transcriber
+- Documentation: https://github.com/SourceShift/youtube-transcriber#readme
+- Issue Tracker: https://github.com/SourceShift/youtube-transcriber/issues 

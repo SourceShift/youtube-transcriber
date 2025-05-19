@@ -1,11 +1,19 @@
 {
   "name": "youtube-transcriber",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "description": "TypeScript implementation of the YouTube Transcript API",
   "type": "commonjs",
   "main": "dist/index.js",
   "bin": {
     "youtube-transcriber": "dist/cli-main.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/SourceShift/youtube-transcriber"
+  },
+  "homepage": "https://github.com/SourceShift/youtube-transcriber#readme",
+  "bugs": {
+    "url": "https://github.com/SourceShift/youtube-transcriber/issues"
   },
   "scripts": {
     "build": "tsc",
